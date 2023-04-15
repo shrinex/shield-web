@@ -16,9 +16,9 @@ const (
 )
 
 type (
-	AuthenticationOption func(*AuthenticationMiddleware)
+	AuthcOption func(*AuthcMiddleware)
 
-	AuthenticationMiddleware struct {
+	AuthcMiddleware struct {
 		subject         security.Subject
 		matcher         ant.Matcher
 		includePatterns []string
@@ -26,8 +26,8 @@ type (
 	}
 )
 
-func NewAuthenticationMiddleware(subject security.Subject, opts ...AuthenticationOption) *AuthenticationMiddleware {
-	m := &AuthenticationMiddleware{subject: subject}
+func NewAuthcMiddleware(subject security.Subject, opts ...AuthcOption) *AuthcMiddleware {
+	m := &AuthcMiddleware{subject: subject}
 
 	for _, f := range opts {
 		f(m)
@@ -40,7 +40,7 @@ func NewAuthenticationMiddleware(subject security.Subject, opts ...Authenticatio
 	return m
 }
 
-func (m *AuthenticationMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
+func (m *AuthcMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if m.shouldSkip(r) {
 			next(w, r)
@@ -51,7 +51,7 @@ func (m *AuthenticationMiddleware) Handle(next http.HandlerFunc) http.HandlerFun
 	}
 }
 
-func (m *AuthenticationMiddleware) shouldSkip(r *http.Request) bool {
+func (m *AuthcMiddleware) shouldSkip(r *http.Request) bool {
 	if len(m.excludePatterns) > 0 {
 		for _, pattern := range m.excludePatterns {
 			if m.matcher.Matches(pattern, r.URL.Path) {
@@ -73,7 +73,7 @@ func (m *AuthenticationMiddleware) shouldSkip(r *http.Request) bool {
 	return true
 }
 
-func (m *AuthenticationMiddleware) bearerAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+func (m *AuthcMiddleware) bearerAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	value, err := parseTokenValue(r)
 	if err != nil {
 		unauthorized(w, r, err)
@@ -118,21 +118,21 @@ func unauthorized(w http.ResponseWriter, r *http.Request, err error) {
 	w.WriteHeader(http.StatusUnauthorized)
 }
 
-func WithMatcher(matcher ant.Matcher) AuthenticationOption {
-	return func(m *AuthenticationMiddleware) {
+func WithMatcher(matcher ant.Matcher) AuthcOption {
+	return func(m *AuthcMiddleware) {
 		m.matcher = matcher
 	}
 }
 
-func WithPatterns(pattern string, patterns ...string) AuthenticationOption {
-	return func(m *AuthenticationMiddleware) {
+func WithPatterns(pattern string, patterns ...string) AuthcOption {
+	return func(m *AuthcMiddleware) {
 		m.includePatterns = append(m.includePatterns, pattern)
 		m.includePatterns = append(m.includePatterns, patterns...)
 	}
 }
 
-func WithExcludePatterns(pattern string, patterns ...string) AuthenticationOption {
-	return func(m *AuthenticationMiddleware) {
+func WithExcludePatterns(pattern string, patterns ...string) AuthcOption {
+	return func(m *AuthcMiddleware) {
 		m.excludePatterns = append(m.excludePatterns, pattern)
 		m.excludePatterns = append(m.excludePatterns, patterns...)
 	}

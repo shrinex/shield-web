@@ -9,9 +9,9 @@ import (
 )
 
 type (
-	AuthorizationOption func(*AuthorizationMiddleware)
+	AuthzOption func(*AuthzMiddleware)
 
-	AuthorizationMiddleware struct {
+	AuthzMiddleware struct {
 		mode     int
 		subject  security.Subject
 		registry *pattern.RouteRegistry
@@ -23,9 +23,9 @@ const (
 	unanimous
 )
 
-func NewAuthorizationMiddleware(subject security.Subject,
-	registry *pattern.RouteRegistry, opts ...AuthorizationOption) *AuthorizationMiddleware {
-	m := &AuthorizationMiddleware{subject: subject, registry: registry}
+func NewAuthzMiddleware(subject security.Subject,
+	registry *pattern.RouteRegistry, opts ...AuthzOption) *AuthzMiddleware {
+	m := &AuthzMiddleware{subject: subject, registry: registry}
 
 	for _, f := range opts {
 		f(m)
@@ -34,7 +34,7 @@ func NewAuthorizationMiddleware(subject security.Subject,
 	return m
 }
 
-func (m *AuthorizationMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
+func (m *AuthzMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(m.registry.Mappings) == 0 {
 			next(w, r)
@@ -57,7 +57,7 @@ func (m *AuthorizationMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-func (m *AuthorizationMiddleware) unanimous(r *http.Request) bool {
+func (m *AuthzMiddleware) unanimous(r *http.Request) bool {
 	for _, mapping := range m.registry.Mappings {
 		if mapping.Matcher.Matches(r) {
 			if !mapping.Predicate(r, m.subject) {
@@ -69,7 +69,7 @@ func (m *AuthorizationMiddleware) unanimous(r *http.Request) bool {
 	return false
 }
 
-func (m *AuthorizationMiddleware) affirmative(r *http.Request) bool {
+func (m *AuthzMiddleware) affirmative(r *http.Request) bool {
 	deny := 0
 	for _, mapping := range m.registry.Mappings {
 		if mapping.Matcher.Matches(r) {
@@ -97,8 +97,8 @@ func forbidden(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusForbidden)
 }
 
-func WithUnanimousMode() AuthorizationOption {
-	return func(m *AuthorizationMiddleware) {
+func WithUnanimousMode() AuthzOption {
+	return func(m *AuthzMiddleware) {
 		m.mode = unanimous
 	}
 }
