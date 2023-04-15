@@ -1,13 +1,13 @@
 package pattern
 
 import (
-	"context"
 	"github.com/shrinex/shield/authz"
 	"github.com/shrinex/shield/security"
+	"net/http"
 )
 
 type (
-	Predicate func(context.Context, security.Subject) bool
+	Predicate func(*http.Request, security.Subject) bool
 
 	UrlMapping struct {
 		Matcher   RequestMatcher
@@ -29,6 +29,10 @@ func (r *RouteRegistry) AntMatcher(pattern string, opts ...RequestMatcherOption)
 	return r
 }
 
+func (r *RouteRegistry) AnyRequests() *RouteRegistry {
+	return r.AntMatcher(patternMatchAll)
+}
+
 func (r *RouteRegistry) That(predicate Predicate) *RouteRegistry {
 	if r.Matcher == nil {
 		panic("call AntMatcher(...) first")
@@ -41,21 +45,25 @@ func (r *RouteRegistry) That(predicate Predicate) *RouteRegistry {
 	return r
 }
 
-func (r *RouteRegistry) Bypass() *RouteRegistry {
-	return r.That(func(context.Context, security.Subject) bool {
+func (r *RouteRegistry) And() *RouteRegistry {
+	return r
+}
+
+func (r *RouteRegistry) PermitAll() *RouteRegistry {
+	return r.That(func(*http.Request, security.Subject) bool {
 		return true
 	})
 }
 
 func (r *RouteRegistry) Authenticated() *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		return subject.Authenticated(ctx)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.Authenticated(r.Context())
 	})
 }
 
 func (r *RouteRegistry) HasRole(role authz.Role) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasRole(ctx, role)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasRole(r.Context(), role)
 		if err != nil {
 			return false
 		}
@@ -65,8 +73,8 @@ func (r *RouteRegistry) HasRole(role authz.Role) *RouteRegistry {
 }
 
 func (r *RouteRegistry) HasAnyRole(roles ...authz.Role) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasAnyRole(ctx, roles...)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasAnyRole(r.Context(), roles...)
 		if err != nil {
 			return false
 		}
@@ -76,8 +84,8 @@ func (r *RouteRegistry) HasAnyRole(roles ...authz.Role) *RouteRegistry {
 }
 
 func (r *RouteRegistry) HasAllRole(roles ...authz.Role) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasAllRole(ctx, roles...)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasAllRole(r.Context(), roles...)
 		if err != nil {
 			return false
 		}
@@ -87,8 +95,8 @@ func (r *RouteRegistry) HasAllRole(roles ...authz.Role) *RouteRegistry {
 }
 
 func (r *RouteRegistry) HasAuthority(authority authz.Authority) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasAuthority(ctx, authority)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasAuthority(r.Context(), authority)
 		if err != nil {
 			return false
 		}
@@ -98,8 +106,8 @@ func (r *RouteRegistry) HasAuthority(authority authz.Authority) *RouteRegistry {
 }
 
 func (r *RouteRegistry) HasAnyAuthority(authorities ...authz.Authority) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasAnyAuthority(ctx, authorities...)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasAnyAuthority(r.Context(), authorities...)
 		if err != nil {
 			return false
 		}
@@ -109,8 +117,8 @@ func (r *RouteRegistry) HasAnyAuthority(authorities ...authz.Authority) *RouteRe
 }
 
 func (r *RouteRegistry) HasAllAuthority(authorities ...authz.Authority) *RouteRegistry {
-	return r.That(func(ctx context.Context, subject security.Subject) bool {
-		grant, err := subject.HasAllAuthority(ctx, authorities...)
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		grant, err := subject.HasAllAuthority(r.Context(), authorities...)
 		if err != nil {
 			return false
 		}
