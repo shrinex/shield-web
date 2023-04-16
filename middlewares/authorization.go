@@ -19,8 +19,10 @@ type (
 )
 
 const (
-	affirmative = iota
-	unanimous
+	// unanimous 全部满足才可以
+	unanimous = iota
+	// affirmative 有一个满足就可以
+	affirmative
 )
 
 func NewAuthzMiddleware(subject security.Subject,
@@ -42,10 +44,10 @@ func (m *AuthzMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		var deny bool
-		if m.mode == affirmative {
-			deny = m.affirmative(r)
-		} else {
+		if m.mode == unanimous {
 			deny = m.unanimous(r)
+		} else {
+			deny = m.affirmative(r)
 		}
 
 		if deny {
@@ -59,9 +61,15 @@ func (m *AuthzMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 func (m *AuthzMiddleware) unanimous(r *http.Request) bool {
 	for _, mapping := range m.registry.Mappings {
-		if mapping.Matcher.Matches(r) {
-			if !mapping.Predicate(r, m.subject) {
-				return true
+		if m.excluded(mapping.Excludes, r) {
+			return false
+		}
+
+		for _, matcher := range mapping.Includes {
+			if matcher.Matches(r) {
+				if !mapping.Predicate(r, m.subject) {
+					return true
+				}
 			}
 		}
 	}
@@ -72,15 +80,35 @@ func (m *AuthzMiddleware) unanimous(r *http.Request) bool {
 func (m *AuthzMiddleware) affirmative(r *http.Request) bool {
 	deny := 0
 	for _, mapping := range m.registry.Mappings {
-		if mapping.Matcher.Matches(r) {
-			if mapping.Predicate(r, m.subject) {
-				return false
+		if m.excluded(mapping.Excludes, r) {
+			return false
+		}
+
+		for _, matcher := range mapping.Includes {
+			if matcher.Matches(r) {
+				if mapping.Predicate(r, m.subject) {
+					return false
+				}
+				deny += 1
 			}
-			deny += 1
 		}
 	}
 
 	return deny > 0
+}
+
+func (m *AuthzMiddleware) excluded(excludes []pattern.RouteMatcher, r *http.Request) bool {
+	if len(excludes) == 0 {
+		return false
+	}
+
+	for _, matcher := range excludes {
+		if matcher.Matches(r) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func detailDenyLog(r *http.Request) {
@@ -97,8 +125,8 @@ func forbidden(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusForbidden)
 }
 
-func WithUnanimousMode() AuthzOption {
+func WithAffirmativeMode() AuthzOption {
 	return func(m *AuthzMiddleware) {
-		m.mode = unanimous
+		m.mode = affirmative
 	}
 }

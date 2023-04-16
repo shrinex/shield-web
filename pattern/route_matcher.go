@@ -5,13 +5,13 @@ import (
 )
 
 type (
-	RequestMatcher interface {
+	RouteMatcher interface {
 		Matches(*http.Request) bool
 	}
 
-	RequestMatcherOption func(*antRequestMatcher)
+	RouteMatcherOption func(*antRouteMatcher)
 
-	antRequestMatcher struct {
+	antRouteMatcher struct {
 		httpMethod string
 		pattern    string
 		matcher    Matcher
@@ -20,14 +20,14 @@ type (
 
 const patternMatchAll = "/**"
 
-var _ RequestMatcher = (*antRequestMatcher)(nil)
+var _ RouteMatcher = (*antRouteMatcher)(nil)
 
-func NewAntRequestMatcher(pattern string, opts ...RequestMatcherOption) RequestMatcher {
+func NewRouteMatcher(pattern string, opts ...RouteMatcherOption) RouteMatcher {
 	if pattern == "**" {
 		pattern = patternMatchAll
 	}
 
-	m := &antRequestMatcher{
+	m := &antRouteMatcher{
 		pattern: pattern,
 		matcher: NewMatcher(),
 	}
@@ -39,7 +39,7 @@ func NewAntRequestMatcher(pattern string, opts ...RequestMatcherOption) RequestM
 	return m
 }
 
-func (m *antRequestMatcher) Matches(r *http.Request) bool {
+func (m *antRouteMatcher) Matches(r *http.Request) bool {
 	if len(m.httpMethod) > 0 && m.httpMethod != r.Method {
 		return false
 	}
@@ -51,8 +51,8 @@ func (m *antRequestMatcher) Matches(r *http.Request) bool {
 	return m.matcher.Matches(m.pattern, r.URL.Path)
 }
 
-func WithHttpMethod(method string) RequestMatcherOption {
-	return func(matcher *antRequestMatcher) {
+func WithHttpMethod(method string) RouteMatcherOption {
+	return func(matcher *antRouteMatcher) {
 		matcher.httpMethod = method
 	}
 }

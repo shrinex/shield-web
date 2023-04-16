@@ -10,13 +10,15 @@ type (
 	Predicate func(*http.Request, security.Subject) bool
 
 	UrlMapping struct {
-		Matcher   RequestMatcher
 		Predicate Predicate
+		Includes  []RouteMatcher
+		Excludes  []RouteMatcher
 	}
 
 	RouteRegistry struct {
-		Matcher  RequestMatcher
 		Mappings []UrlMapping
+		Includes []RouteMatcher
+		Excludes []RouteMatcher
 	}
 )
 
@@ -24,24 +26,49 @@ func NewRouteRegistry() *RouteRegistry {
 	return &RouteRegistry{Mappings: make([]UrlMapping, 0)}
 }
 
-func (r *RouteRegistry) AntMatcher(pattern string, opts ...RequestMatcherOption) *RouteRegistry {
-	r.Matcher = NewAntRequestMatcher(pattern, opts...)
+func (r *RouteRegistry) RouteMatchers(method string, patterns ...string) *RouteRegistry {
+	for _, pattern := range patterns {
+		r.Includes = append(r.Includes, NewRouteMatcher(pattern, WithHttpMethod(method)))
+	}
+	return r
+}
+
+func (r *RouteRegistry) AntMatchers(patterns ...string) *RouteRegistry {
+	for _, pattern := range patterns {
+		r.Includes = append(r.Includes, NewRouteMatcher(pattern))
+	}
+	return r
+}
+
+func (r *RouteRegistry) RouteExcludes(method string, patterns ...string) *RouteRegistry {
+	for _, pattern := range patterns {
+		r.Excludes = append(r.Excludes, NewRouteMatcher(pattern, WithHttpMethod(method)))
+	}
+	return r
+}
+
+func (r *RouteRegistry) AntExcludes(patterns ...string) *RouteRegistry {
+	for _, pattern := range patterns {
+		r.Excludes = append(r.Excludes, NewRouteMatcher(pattern))
+	}
 	return r
 }
 
 func (r *RouteRegistry) AnyRequests() *RouteRegistry {
-	return r.AntMatcher(patternMatchAll)
+	return r.AntMatchers(patternMatchAll)
 }
 
 func (r *RouteRegistry) That(predicate Predicate) *RouteRegistry {
-	if r.Matcher == nil {
-		panic("call AntMatcher(...) first")
+	if len(r.Includes) == 0 {
+		panic("call AntMatchers/RouteMatchers(...) first")
 	}
 	r.Mappings = append(r.Mappings, UrlMapping{
-		Matcher:   r.Matcher,
 		Predicate: predicate,
+		Includes:  r.Includes,
+		Excludes:  r.Excludes,
 	})
-	r.Matcher = nil
+	r.Includes = nil
+	r.Excludes = nil
 	return r
 }
 
@@ -63,66 +90,72 @@ func (r *RouteRegistry) Authenticated() *RouteRegistry {
 
 func (r *RouteRegistry) HasRole(role authz.Role) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasRole(r.Context(), role)
-		if err != nil {
-			return false
-		}
+		return subject.HasRole(r.Context(), role)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasRoleFunc(fn func(*http.Request, security.Subject) authz.Role) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasRole(r.Context(), fn(r, subject))
 	})
 }
 
 func (r *RouteRegistry) HasAnyRole(roles ...authz.Role) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasAnyRole(r.Context(), roles...)
-		if err != nil {
-			return false
-		}
+		return subject.HasAnyRole(r.Context(), roles...)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasAnyRoleFunc(fn func(*http.Request, security.Subject) []authz.Role) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasAnyRole(r.Context(), fn(r, subject)...)
 	})
 }
 
 func (r *RouteRegistry) HasAllRole(roles ...authz.Role) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasAllRole(r.Context(), roles...)
-		if err != nil {
-			return false
-		}
+		return subject.HasAllRole(r.Context(), roles...)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasAllRoleFunc(fn func(*http.Request, security.Subject) []authz.Role) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasAllRole(r.Context(), fn(r, subject)...)
 	})
 }
 
 func (r *RouteRegistry) HasAuthority(authority authz.Authority) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasAuthority(r.Context(), authority)
-		if err != nil {
-			return false
-		}
+		return subject.HasAuthority(r.Context(), authority)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasAuthorityFunc(fn func(*http.Request, security.Subject) authz.Authority) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasAuthority(r.Context(), fn(r, subject))
 	})
 }
 
 func (r *RouteRegistry) HasAnyAuthority(authorities ...authz.Authority) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasAnyAuthority(r.Context(), authorities...)
-		if err != nil {
-			return false
-		}
+		return subject.HasAnyAuthority(r.Context(), authorities...)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasAnyAuthorityFunc(fn func(*http.Request, security.Subject) []authz.Authority) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasAnyAuthority(r.Context(), fn(r, subject)...)
 	})
 }
 
 func (r *RouteRegistry) HasAllAuthority(authorities ...authz.Authority) *RouteRegistry {
 	return r.That(func(r *http.Request, subject security.Subject) bool {
-		grant, err := subject.HasAllAuthority(r.Context(), authorities...)
-		if err != nil {
-			return false
-		}
+		return subject.HasAllAuthority(r.Context(), authorities...)
+	})
+}
 
-		return grant
+func (r *RouteRegistry) HasAllAuthorityFunc(fn func(*http.Request, security.Subject) []authz.Authority) *RouteRegistry {
+	return r.That(func(r *http.Request, subject security.Subject) bool {
+		return subject.HasAllAuthority(r.Context(), fn(r, subject)...)
 	})
 }
