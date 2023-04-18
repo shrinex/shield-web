@@ -26,14 +26,14 @@ func NewRouteRegistry() *RouteRegistry {
 	return &RouteRegistry{Mappings: make([]UrlMapping, 0)}
 }
 
-func (r *RouteRegistry) RouteMatchers(method string, patterns ...string) *RouteRegistry {
+func (r *RouteRegistry) RouteMatches(method string, patterns ...string) *RouteRegistry {
 	for _, pattern := range patterns {
 		r.Includes = append(r.Includes, NewRouteMatcher(pattern, WithHttpMethod(method)))
 	}
 	return r
 }
 
-func (r *RouteRegistry) AntMatchers(patterns ...string) *RouteRegistry {
+func (r *RouteRegistry) AntMatches(patterns ...string) *RouteRegistry {
 	for _, pattern := range patterns {
 		r.Includes = append(r.Includes, NewRouteMatcher(pattern))
 	}
@@ -55,12 +55,12 @@ func (r *RouteRegistry) AntExcludes(patterns ...string) *RouteRegistry {
 }
 
 func (r *RouteRegistry) AnyRequests() *RouteRegistry {
-	return r.AntMatchers(patternMatchAll)
+	return r.AntMatches(MatchAll)
 }
 
 func (r *RouteRegistry) That(predicate Predicate) *RouteRegistry {
 	if len(r.Includes) == 0 {
-		panic("call AntMatchers/RouteMatchers(...) first")
+		panic("call AntMatches/RouteMatches(...) first")
 	}
 	r.Mappings = append(r.Mappings, UrlMapping{
 		Predicate: predicate,

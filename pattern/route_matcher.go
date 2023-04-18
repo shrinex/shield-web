@@ -18,13 +18,13 @@ type (
 	}
 )
 
-const patternMatchAll = "/**"
+const MatchAll = "/**"
 
 var _ RouteMatcher = (*antRouteMatcher)(nil)
 
 func NewRouteMatcher(pattern string, opts ...RouteMatcherOption) RouteMatcher {
 	if pattern == "**" {
-		pattern = patternMatchAll
+		pattern = MatchAll
 	}
 
 	m := &antRouteMatcher{
@@ -44,7 +44,7 @@ func (m *antRouteMatcher) Matches(r *http.Request) bool {
 		return false
 	}
 
-	if m.pattern == patternMatchAll {
+	if m.pattern == MatchAll {
 		return true
 	}
 

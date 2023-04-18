@@ -124,16 +124,14 @@ func WithMatcher(matcher ant.Matcher) AuthcOption {
 	}
 }
 
-func WithPatterns(pattern string, patterns ...string) AuthcOption {
+func WithPatterns(patterns ...string) AuthcOption {
 	return func(m *AuthcMiddleware) {
-		m.includePatterns = append(m.includePatterns, pattern)
 		m.includePatterns = append(m.includePatterns, patterns...)
 	}
 }
 
-func WithExcludePatterns(pattern string, patterns ...string) AuthcOption {
+func WithExcludePatterns(patterns ...string) AuthcOption {
 	return func(m *AuthcMiddleware) {
-		m.excludePatterns = append(m.excludePatterns, pattern)
 		m.excludePatterns = append(m.excludePatterns, patterns...)
 	}
 }

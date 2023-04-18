@@ -9,20 +9,22 @@ import (
 )
 
 type (
+	AuthzMode int
+
 	AuthzOption func(*AuthzMiddleware)
 
 	AuthzMiddleware struct {
-		mode     int
+		mode     AuthzMode
 		subject  security.Subject
 		registry *pattern.RouteRegistry
 	}
 )
 
 const (
-	// unanimous 全部满足才可以
-	unanimous = iota
-	// affirmative 有一个满足就可以
-	affirmative
+	// Affirmative 有一个满足就可以
+	Affirmative AuthzMode = iota
+	// Unanimous 全部满足才可以
+	Unanimous
 )
 
 func NewAuthzMiddleware(subject security.Subject,
@@ -44,10 +46,10 @@ func (m *AuthzMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		var deny bool
-		if m.mode == unanimous {
-			deny = m.unanimous(r)
-		} else {
+		if m.mode == Affirmative {
 			deny = m.affirmative(r)
+		} else {
+			deny = m.unanimous(r)
 		}
 
 		if deny {
@@ -125,8 +127,16 @@ func forbidden(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusForbidden)
 }
 
-func WithAffirmativeMode() AuthzOption {
+func WithAuthzMode(mode AuthzMode) AuthzOption {
 	return func(m *AuthzMiddleware) {
-		m.mode = affirmative
+		m.mode = mode
 	}
+}
+
+func WithAffirmativeMode() AuthzOption {
+	return WithAuthzMode(Affirmative)
+}
+
+func WithUnanimousMode() AuthzOption {
+	return WithAuthzMode(Unanimous)
 }
