@@ -47,7 +47,7 @@ func (b *Builder) AuthorizeRequests() *AuthzConfigurer {
 
 func (b *Builder) Build() Middleware {
 	// order is important here
-	sort.Sort(slice(b.cfgs))
+	sort.Sort(byOrder(b.cfgs))
 	for _, cfg := range b.cfgs {
 		cfg.Configure(b)
 	}
@@ -66,8 +66,8 @@ func (b *Builder) apply(configurer Configurer) Configurer {
 	return configurer
 }
 
-type slice []Configurer
+type byOrder []Configurer
 
-func (s slice) Len() int           { return len(s) }
-func (s slice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s slice) Less(i, j int) bool { return s[i].Order() < s[j].Order() }
+func (s byOrder) Len() int           { return len(s) }
+func (s byOrder) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byOrder) Less(i, j int) bool { return s[i].Order() < s[j].Order() }
