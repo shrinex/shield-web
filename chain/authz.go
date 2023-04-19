@@ -132,6 +132,10 @@ func (c *AuthzConfigurer) And() *Builder {
 	return c.builder
 }
 
+func (c *AuthzConfigurer) Order() int {
+	return 3
+}
+
 func (c *AuthzConfigurer) Configure(builder *Builder) {
 	if builder.subject == nil {
 		panic("call Subject() first")

@@ -34,6 +34,10 @@ func (c *AuthcConfigurer) And() *Builder {
 	return c.builder
 }
 
+func (c *AuthcConfigurer) Order() int {
+	return 1
+}
+
 func (c *AuthcConfigurer) Configure(builder *Builder) {
 	if builder.subject == nil {
 		panic("call Subject() first")

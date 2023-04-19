@@ -4,6 +4,7 @@ import (
 	ant "github.com/shrinex/shield-web/pattern"
 	"github.com/shrinex/shield/security"
 	"net/http"
+	"sort"
 )
 
 type (
@@ -18,6 +19,9 @@ type (
 	}
 )
 
+// NewBuilder returns a newly created chain builder
+// Do not retain reference of returned object, or any
+// other objects created by this Builder, like AuthcConfigurer
 func NewBuilder() *Builder {
 	return &Builder{}
 }
@@ -42,6 +46,8 @@ func (b *Builder) AuthorizeRequests() *AuthzConfigurer {
 }
 
 func (b *Builder) Build() Middleware {
+	// order is important here
+	sort.Sort(slice(b.cfgs))
 	for _, cfg := range b.cfgs {
 		cfg.Configure(b)
 	}
@@ -59,3 +65,9 @@ func (b *Builder) apply(configurer Configurer) Configurer {
 	b.cfgs = append(b.cfgs, configurer)
 	return configurer
 }
+
+type slice []Configurer
+
+func (s slice) Len() int           { return len(s) }
+func (s slice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s slice) Less(i, j int) bool { return s[i].Order() < s[j].Order() }

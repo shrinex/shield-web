@@ -3,7 +3,9 @@ package middlewares
 import (
 	"github.com/shrinex/shield/security"
 	"github.com/shrinex/shield/semgt"
+	"log"
 	"net/http"
+	"net/http/httputil"
 )
 
 type (
@@ -40,14 +42,16 @@ func (m *SessionMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		next(w, r)
 
 		if !sw.written {
-			_ = s.Flush(r.Context())
+			err = s.Flush(r.Context())
+			detailSessionLog(sw.request, err.Error())
 		}
 	}
 }
 
 func (sw *sessionResponseWriter) Write(b []byte) (int, error) {
 	if !sw.written {
-		_ = sw.session.Flush(sw.request.Context())
+		err := sw.session.Flush(sw.request.Context())
+		detailSessionLog(sw.request, err.Error())
 		sw.written = true
 	}
 
@@ -56,7 +60,8 @@ func (sw *sessionResponseWriter) Write(b []byte) (int, error) {
 
 func (sw *sessionResponseWriter) WriteHeader(code int) {
 	if !sw.written {
-		_ = sw.session.Flush(sw.request.Context())
+		err := sw.session.Flush(sw.request.Context())
+		detailSessionLog(sw.request, err.Error())
 		sw.written = true
 	}
 
@@ -65,4 +70,10 @@ func (sw *sessionResponseWriter) WriteHeader(code int) {
 
 func (sw *sessionResponseWriter) Unwrap() http.ResponseWriter {
 	return sw.ResponseWriter
+}
+
+func detailSessionLog(r *http.Request, reason string) {
+	// discard dump error, only for debug purpose
+	details, _ := httputil.DumpRequest(r, true)
+	log.Printf("flush session failed: %s\n=> %+v\n", reason, string(details))
 }

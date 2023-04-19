@@ -6,6 +6,7 @@ type (
 	}
 
 	SecurityConfigurer[T any, B SecurityBuilder[T]] interface {
+		Order() int
 		Configure(B)
 	}
 )

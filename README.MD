@@ -1,1 +1,1 @@
-Web plugin for shield.
+Web plugin for shield, inspired by Spring-Security.

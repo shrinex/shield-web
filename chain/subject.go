@@ -22,6 +22,10 @@ func (c *SubjectConfigurer) And() *Builder {
 	return c.builder
 }
 
+func (c *SubjectConfigurer) Order() int {
+	return 0
+}
+
 func (c *SubjectConfigurer) Configure(builder *Builder) {
 	builder.subject = c.subject
 }
