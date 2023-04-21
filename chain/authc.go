@@ -35,7 +35,7 @@ func (c *AuthcConfigurer) And() *Builder {
 }
 
 func (c *AuthcConfigurer) Order() int {
-	return 1
+	return 10
 }
 
 func (c *AuthcConfigurer) Configure(builder *Builder) {

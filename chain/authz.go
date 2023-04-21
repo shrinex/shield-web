@@ -48,6 +48,11 @@ func (c *AuthzConfigurer) That(predicate ant.Predicate) *AuthzConfigurer {
 	return c
 }
 
+func (c *AuthzConfigurer) DenyAll() *AuthzConfigurer {
+	c.registry.DenyAll()
+	return c
+}
+
 func (c *AuthzConfigurer) PermitAll() *AuthzConfigurer {
 	c.registry.PermitAll()
 	return c
@@ -133,7 +138,7 @@ func (c *AuthzConfigurer) And() *Builder {
 }
 
 func (c *AuthzConfigurer) Order() int {
-	return 3
+	return 30
 }
 
 func (c *AuthzConfigurer) Configure(builder *Builder) {

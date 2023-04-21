@@ -43,7 +43,7 @@ func (m *SessionMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		if !sw.written {
 			err = s.Flush(r.Context())
-			detailSessionLog(sw.request, err.Error())
+			detailSessionLog(sw.request, err)
 		}
 	}
 }
@@ -51,7 +51,7 @@ func (m *SessionMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 func (sw *sessionResponseWriter) Write(b []byte) (int, error) {
 	if !sw.written {
 		err := sw.session.Flush(sw.request.Context())
-		detailSessionLog(sw.request, err.Error())
+		detailSessionLog(sw.request, err)
 		sw.written = true
 	}
 
@@ -61,7 +61,7 @@ func (sw *sessionResponseWriter) Write(b []byte) (int, error) {
 func (sw *sessionResponseWriter) WriteHeader(code int) {
 	if !sw.written {
 		err := sw.session.Flush(sw.request.Context())
-		detailSessionLog(sw.request, err.Error())
+		detailSessionLog(sw.request, err)
 		sw.written = true
 	}
 
@@ -72,8 +72,11 @@ func (sw *sessionResponseWriter) Unwrap() http.ResponseWriter {
 	return sw.ResponseWriter
 }
 
-func detailSessionLog(r *http.Request, reason string) {
+func detailSessionLog(r *http.Request, err error) {
+	if err == nil {
+		return
+	}
 	// discard dump error, only for debug purpose
 	details, _ := httputil.DumpRequest(r, true)
-	log.Printf("flush session failed: %s\n=> %+v\n", reason, string(details))
+	log.Printf("flush session failed: %s\n=> %+v\n", err.Error(), string(details))
 }

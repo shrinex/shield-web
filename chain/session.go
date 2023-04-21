@@ -17,7 +17,7 @@ func (c *SessionManagementConfigurer) And() *Builder {
 }
 
 func (c *SessionManagementConfigurer) Order() int {
-	return 2
+	return 20
 }
 
 func (c *SessionManagementConfigurer) Configure(builder *Builder) {

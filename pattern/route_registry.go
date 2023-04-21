@@ -76,6 +76,12 @@ func (r *RouteRegistry) And() *RouteRegistry {
 	return r
 }
 
+func (r *RouteRegistry) DenyAll() *RouteRegistry {
+	return r.That(func(*http.Request, security.Subject) bool {
+		return false
+	})
+}
+
 func (r *RouteRegistry) PermitAll() *RouteRegistry {
 	return r.That(func(*http.Request, security.Subject) bool {
 		return true
