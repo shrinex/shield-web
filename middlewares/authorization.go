@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"encoding/json"
 	"github.com/shrinex/shield-web/pattern"
 	"github.com/shrinex/shield/security"
 	"log"
@@ -125,6 +126,24 @@ func forbidden(w http.ResponseWriter, r *http.Request) {
 
 	// if user not setting HTTP header, we set header with 403
 	w.WriteHeader(http.StatusForbidden)
+
+	bytes, err := json.Marshal(struct {
+		Code    int32  `json:"code"`    // 错误码
+		Message string `json:"message"` // 错误信息
+	}{
+		Code:    http.StatusForbidden,
+		Message: "权限不足",
+	})
+	if err != nil {
+		log.Printf("json marshal failed: %s\n", err.Error())
+		return
+	}
+
+	_, err = w.Write(bytes)
+	if err != nil {
+		log.Printf("write body failed: %s\n", err.Error())
+		return
+	}
 }
 
 func WithAuthzMode(mode AuthzMode) AuthzOption {

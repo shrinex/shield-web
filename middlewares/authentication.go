@@ -1,9 +1,12 @@
 package middlewares
 
 import (
+	"encoding/json"
+	"errors"
 	ant "github.com/shrinex/shield-web/pattern"
 	"github.com/shrinex/shield/authc"
 	"github.com/shrinex/shield/security"
+	"github.com/shrinex/shield/semgt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -23,6 +26,7 @@ type (
 		matcher         ant.Matcher
 		includePatterns []string
 		excludePatterns []string
+		errorHandler    func(http.ResponseWriter, *http.Request, error)
 	}
 )
 
@@ -35,6 +39,10 @@ func NewAuthcMiddleware(subject security.Subject, opts ...AuthcOption) *AuthcMid
 
 	if m.matcher == nil {
 		m.matcher = ant.NewMatcher()
+	}
+
+	if m.errorHandler == nil {
+		m.errorHandler = defaultErrorHandler
 	}
 
 	return m
@@ -76,14 +84,14 @@ func (m *AuthcMiddleware) shouldSkip(r *http.Request) bool {
 func (m *AuthcMiddleware) bearerAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	value, err := parseTokenValue(r)
 	if err != nil {
-		unauthorized(w, r, err)
+		m.errorHandler(w, r, err)
 		return
 	}
 
 	token := authc.NewBearerToken(value)
 	ctx, err := m.subject.Login(r.Context(), token)
 	if err != nil {
-		unauthorized(w, r, err)
+		m.errorHandler(w, r, err)
 		return
 	}
 
@@ -110,17 +118,65 @@ func detailAuthLog(r *http.Request, reason string) {
 	log.Printf("authorize failed: %s\n=> %+v\n", reason, string(details))
 }
 
-func unauthorized(w http.ResponseWriter, r *http.Request, err error) {
+func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	// log first
 	detailAuthLog(r, err.Error())
 
 	// if user not setting HTTP header, we set header with 401
 	w.WriteHeader(http.StatusUnauthorized)
+
+	bytes, err := json.Marshal(struct {
+		Code    int32  `json:"code"`    // 错误码
+		Message string `json:"message"` // 错误信息
+	}{
+		Code:    http.StatusUnauthorized,
+		Message: evalMessage(err),
+	})
+	if err != nil {
+		log.Printf("json marshal failed: %s\n", err.Error())
+		return
+	}
+
+	_, err = w.Write(bytes)
+	if err != nil {
+		log.Printf("write body failed: %s\n", err.Error())
+		return
+	}
+}
+
+func evalMessage(err error) string {
+	if errors.Is(err, authc.ErrInvalidToken) {
+		return "token格式不正确"
+	}
+
+	if errors.Is(err, authc.ErrUnauthenticated) {
+		return "请先登录"
+	}
+
+	if errors.Is(err, semgt.ErrExpired) {
+		return "会话已过期，请重新登录"
+	}
+
+	if errors.Is(err, semgt.ErrReplaced) {
+		return "当前账号已在其它设备登录"
+	}
+
+	if errors.Is(err, semgt.ErrOverflow) {
+		return "会话已超限，请重新登录"
+	}
+
+	return err.Error()
 }
 
 func WithMatcher(matcher ant.Matcher) AuthcOption {
 	return func(m *AuthcMiddleware) {
 		m.matcher = matcher
+	}
+}
+
+func WithErrorHandler(handler func(http.ResponseWriter, *http.Request, error)) AuthcOption {
+	return func(m *AuthcMiddleware) {
+		m.errorHandler = handler
 	}
 }
 
