@@ -15,9 +15,10 @@ type (
 	AuthzOption func(*AuthzMiddleware)
 
 	AuthzMiddleware struct {
-		mode     AuthzMode
-		subject  security.Subject
-		registry *pattern.RouteRegistry
+		mode             AuthzMode
+		subject          security.Subject
+		registry         *pattern.RouteRegistry
+		forbiddenHandler func(http.ResponseWriter, *http.Request)
 	}
 )
 
@@ -34,6 +35,10 @@ func NewAuthzMiddleware(subject security.Subject,
 
 	for _, f := range opts {
 		f(m)
+	}
+
+	if m.forbiddenHandler == nil {
+		m.forbiddenHandler = defaultForbiddenHandler
 	}
 
 	return m
@@ -54,7 +59,7 @@ func (m *AuthzMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if deny {
-			forbidden(w, r)
+			m.forbiddenHandler(w, r)
 			return
 		}
 
@@ -120,7 +125,7 @@ func detailDenyLog(r *http.Request) {
 	log.Printf("forbidden: %+v\n", string(details))
 }
 
-func forbidden(w http.ResponseWriter, r *http.Request) {
+func defaultForbiddenHandler(w http.ResponseWriter, r *http.Request) {
 	// log first
 	detailDenyLog(r)
 
@@ -149,6 +154,12 @@ func forbidden(w http.ResponseWriter, r *http.Request) {
 func WithAuthzMode(mode AuthzMode) AuthzOption {
 	return func(m *AuthzMiddleware) {
 		m.mode = mode
+	}
+}
+
+func WithForbiddenHandler(handler func(http.ResponseWriter, *http.Request)) AuthzOption {
+	return func(m *AuthzMiddleware) {
+		m.forbiddenHandler = handler
 	}
 }
 

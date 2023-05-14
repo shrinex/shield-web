@@ -22,11 +22,11 @@ type (
 	AuthcOption func(*AuthcMiddleware)
 
 	AuthcMiddleware struct {
-		subject         security.Subject
-		matcher         ant.Matcher
-		includePatterns []string
-		excludePatterns []string
-		errorHandler    func(http.ResponseWriter, *http.Request, error)
+		subject             security.Subject
+		matcher             ant.Matcher
+		includePatterns     []string
+		excludePatterns     []string
+		unauthorizedHandler func(http.ResponseWriter, *http.Request, error)
 	}
 )
 
@@ -41,8 +41,8 @@ func NewAuthcMiddleware(subject security.Subject, opts ...AuthcOption) *AuthcMid
 		m.matcher = ant.NewMatcher()
 	}
 
-	if m.errorHandler == nil {
-		m.errorHandler = defaultErrorHandler
+	if m.unauthorizedHandler == nil {
+		m.unauthorizedHandler = defaultUnauthorizedHandler
 	}
 
 	return m
@@ -84,14 +84,14 @@ func (m *AuthcMiddleware) shouldSkip(r *http.Request) bool {
 func (m *AuthcMiddleware) bearerAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	value, err := parseTokenValue(r)
 	if err != nil {
-		m.errorHandler(w, r, err)
+		m.unauthorizedHandler(w, r, err)
 		return
 	}
 
 	token := authc.NewBearerToken(value)
 	ctx, err := m.subject.Login(r.Context(), token)
 	if err != nil {
-		m.errorHandler(w, r, err)
+		m.unauthorizedHandler(w, r, err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func detailAuthLog(r *http.Request, reason string) {
 	log.Printf("authorize failed: %s\n=> %+v\n", reason, string(details))
 }
 
-func defaultErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+func defaultUnauthorizedHandler(w http.ResponseWriter, r *http.Request, err error) {
 	// log first
 	detailAuthLog(r, err.Error())
 
@@ -174,9 +174,9 @@ func WithMatcher(matcher ant.Matcher) AuthcOption {
 	}
 }
 
-func WithErrorHandler(handler func(http.ResponseWriter, *http.Request, error)) AuthcOption {
+func WithUnauthorizedHandler(handler func(http.ResponseWriter, *http.Request, error)) AuthcOption {
 	return func(m *AuthcMiddleware) {
-		m.errorHandler = handler
+		m.unauthorizedHandler = handler
 	}
 }
 
