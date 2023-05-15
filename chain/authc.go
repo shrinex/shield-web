@@ -3,6 +3,7 @@ package chain
 import (
 	"github.com/shrinex/shield-web/middlewares"
 	ant "github.com/shrinex/shield-web/pattern"
+	"net/http"
 )
 
 type (
@@ -10,6 +11,8 @@ type (
 		builder  *Builder
 		includes []string
 		excludes []string
+		matcher  ant.Matcher
+		handler  func(http.ResponseWriter, *http.Request, error)
 	}
 )
 
@@ -30,6 +33,16 @@ func (c *AuthcConfigurer) AntExcludes(patterns ...string) *AuthcConfigurer {
 	return c
 }
 
+func (c *AuthcConfigurer) Use(matcher ant.Matcher) *AuthcConfigurer {
+	c.matcher = matcher
+	return c
+}
+
+func (c *AuthcConfigurer) WhenUnauthorized(handler func(http.ResponseWriter, *http.Request, error)) *AuthcConfigurer {
+	c.handler = handler
+	return c
+}
+
 func (c *AuthcConfigurer) And() *Builder {
 	return c.builder
 }
@@ -45,7 +58,9 @@ func (c *AuthcConfigurer) Configure(builder *Builder) {
 	builder.chain = append(builder.chain,
 		middlewares.NewAuthcMiddleware(
 			builder.subject,
+			middlewares.WithMatcher(c.matcher),
 			middlewares.WithPatterns(c.includes...),
 			middlewares.WithExcludePatterns(c.excludes...),
+			middlewares.WithUnauthorizedHandler(c.handler),
 		).Handle)
 }

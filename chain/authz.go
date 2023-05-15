@@ -13,6 +13,7 @@ type (
 		builder  *Builder
 		registry *ant.RouteRegistry
 		mode     middlewares.AuthzMode
+		handler  func(http.ResponseWriter, *http.Request)
 	}
 )
 
@@ -133,6 +134,11 @@ func (c *AuthzConfigurer) AffirmativeMode() *AuthzConfigurer {
 	return c
 }
 
+func (c *AuthzConfigurer) WhenForbidden(handler func(http.ResponseWriter, *http.Request)) *AuthzConfigurer {
+	c.handler = handler
+	return c
+}
+
 func (c *AuthzConfigurer) And() *Builder {
 	return c.builder
 }
@@ -149,5 +155,6 @@ func (c *AuthzConfigurer) Configure(builder *Builder) {
 		middlewares.NewAuthzMiddleware(
 			builder.subject, c.registry,
 			middlewares.WithAuthzMode(c.mode),
+			middlewares.WithForbiddenHandler(c.handler),
 		).Handle)
 }

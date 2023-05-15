@@ -9,21 +9,21 @@ import (
 type (
 	Predicate func(*http.Request, security.Subject) bool
 
-	UrlMapping struct {
+	URLMapping struct {
 		Predicate Predicate
 		Includes  []RouteMatcher
 		Excludes  []RouteMatcher
 	}
 
 	RouteRegistry struct {
-		Mappings []UrlMapping
+		Mappings []URLMapping
 		Includes []RouteMatcher
 		Excludes []RouteMatcher
 	}
 )
 
 func NewRouteRegistry() *RouteRegistry {
-	return &RouteRegistry{Mappings: make([]UrlMapping, 0)}
+	return &RouteRegistry{Mappings: make([]URLMapping, 0)}
 }
 
 func (r *RouteRegistry) RouteMatches(method string, patterns ...string) *RouteRegistry {
@@ -62,7 +62,7 @@ func (r *RouteRegistry) That(predicate Predicate) *RouteRegistry {
 	if len(r.Includes) == 0 {
 		panic("call AntMatches/RouteMatches(...) first")
 	}
-	r.Mappings = append(r.Mappings, UrlMapping{
+	r.Mappings = append(r.Mappings, URLMapping{
 		Predicate: predicate,
 		Includes:  r.Includes,
 		Excludes:  r.Excludes,
