@@ -97,7 +97,7 @@ func (m *AuthzMiddleware) affirmative(r *http.Request) bool {
 				if mapping.Predicate(r, m.subject) {
 					return false
 				}
-				deny += 1
+				deny += 1 // nolint
 			}
 		}
 	}

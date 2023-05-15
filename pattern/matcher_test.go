@@ -7,7 +7,7 @@ import (
 
 var matcher = NewMatcher()
 
-func TestMatches(t *testing.T) {
+func TestMatches(t *testing.T) { // nolint
 	// test exact matching
 	assert.True(t, matcher.Matches("test", "test"))
 	assert.True(t, matcher.Matches("/test", "/test"))

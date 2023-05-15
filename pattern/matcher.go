@@ -39,7 +39,7 @@ func NewMatcher() Matcher {
 	return &antPathMatcher{}
 }
 
-func (m *antPathMatcher) Matches(pattern string, path string) bool {
+func (m *antPathMatcher) Matches(pattern string, path string) bool { // nolint
 	if strings.HasPrefix(pattern, pathSeparator) != strings.HasPrefix(path, pathSeparator) {
 		return false
 	}
@@ -55,7 +55,7 @@ func (m *antPathMatcher) Matches(pattern string, path string) bool {
 	// Match all elements up to the first **
 	for patternIdxStart <= patternIdxEnd && pathIdxStart <= pathIdxEnd {
 		patDir := patternDirs[patternIdxStart]
-		if "**" == patDir {
+		if patDir == "**" {
 			break
 		}
 		if !m.matchStrings(patDir, pathDirs[pathIdxStart]) {
@@ -161,7 +161,7 @@ func (m *antPathMatcher) Matches(pattern string, path string) bool {
 	return true
 }
 
-func (m *antPathMatcher) matchStrings(pattern string, str string) bool {
+func (m *antPathMatcher) matchStrings(pattern string, str string) bool { // nolint
 	patArr := []byte(pattern)
 	strArr := []byte(str)
 	patIdxStart := 0
@@ -213,7 +213,7 @@ func (m *antPathMatcher) matchStrings(pattern string, str string) bool {
 	}
 	if strIdxStart > strIdxEnd {
 		// All characters in the string are used. Check if only '*'s are
-		// left in the pattern. If so, we succeeded. Otherwise failure.
+		// left in the pattern. If so, we succeeded. Otherwise, failure.
 		for i := patIdxStart; i <= patIdxEnd; i++ {
 			if patArr[i] != '*' {
 				return false
@@ -236,7 +236,7 @@ func (m *antPathMatcher) matchStrings(pattern string, str string) bool {
 	}
 	if strIdxStart > strIdxEnd {
 		// All characters in the string are used. Check if only '*'s are
-		// left in the pattern. If so, we succeeded. Otherwise failure.
+		// left in the pattern. If so, we succeeded. Otherwise, failure.
 		for i := patIdxStart; i <= patIdxEnd; i++ {
 			if patArr[i] != '*' {
 				return false
@@ -289,7 +289,7 @@ func (m *antPathMatcher) matchStrings(pattern string, str string) bool {
 	}
 
 	// All characters in the string are used. Check if only '*'s are left
-	// in the pattern. If so, we succeeded. Otherwise failure.
+	// in the pattern. If so, we succeeded. Otherwise, failure.
 	for i := patIdxStart; i <= patIdxEnd; i++ {
 		if patArr[i] != '*' {
 			return false
@@ -300,7 +300,7 @@ func (m *antPathMatcher) matchStrings(pattern string, str string) bool {
 }
 
 func tokenize(path, sep string) []string {
-	var ss []string
+	ss := make([]string, 0)
 	for _, s := range strings.Split(path, sep) {
 		if len(s) == 0 {
 			continue

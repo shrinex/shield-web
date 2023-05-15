@@ -28,7 +28,7 @@ func NewRouteRegistry() *RouteRegistry {
 
 func (r *RouteRegistry) RouteMatches(method string, patterns ...string) *RouteRegistry {
 	for _, pattern := range patterns {
-		r.Includes = append(r.Includes, NewRouteMatcher(pattern, WithHttpMethod(method)))
+		r.Includes = append(r.Includes, NewRouteMatcher(pattern, WithHTTPMethod(method)))
 	}
 	return r
 }
@@ -42,7 +42,7 @@ func (r *RouteRegistry) AntMatches(patterns ...string) *RouteRegistry {
 
 func (r *RouteRegistry) RouteExcludes(method string, patterns ...string) *RouteRegistry {
 	for _, pattern := range patterns {
-		r.Excludes = append(r.Excludes, NewRouteMatcher(pattern, WithHttpMethod(method)))
+		r.Excludes = append(r.Excludes, NewRouteMatcher(pattern, WithHTTPMethod(method)))
 	}
 	return r
 }

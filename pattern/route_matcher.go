@@ -51,7 +51,7 @@ func (m *antRouteMatcher) Matches(r *http.Request) bool {
 	return m.matcher.Matches(m.pattern, r.URL.Path)
 }
 
-func WithHttpMethod(method string) RouteMatcherOption {
+func WithHTTPMethod(method string) RouteMatcherOption {
 	return func(matcher *antRouteMatcher) {
 		matcher.httpMethod = method
 	}
