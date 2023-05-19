@@ -53,7 +53,7 @@ func (c *AuthcConfigurer) Order() int {
 
 func (c *AuthcConfigurer) Configure(builder *Builder) {
 	if builder.subject == nil {
-		panic("call Subject() first")
+		panic("call Builder.Subject() first")
 	}
 	builder.chain = append(builder.chain,
 		middlewares.NewAuthcMiddleware(

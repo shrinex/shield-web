@@ -29,12 +29,15 @@ const (
 	Unanimous
 )
 
-func NewAuthzMiddleware(subject security.Subject,
-	registry *pattern.RouteRegistry, opts ...AuthzOption) *AuthzMiddleware {
-	m := &AuthzMiddleware{subject: subject, registry: registry}
+func NewAuthzMiddleware(subject security.Subject, opts ...AuthzOption) *AuthzMiddleware {
+	m := &AuthzMiddleware{subject: subject}
 
 	for _, f := range opts {
 		f(m)
+	}
+
+	if m.registry == nil {
+		m.registry = pattern.NewRouteRegistry()
 	}
 
 	if m.forbiddenHandler == nil {
@@ -154,6 +157,12 @@ func defaultForbiddenHandler(w http.ResponseWriter, r *http.Request) {
 func WithAuthzMode(mode AuthzMode) AuthzOption {
 	return func(m *AuthzMiddleware) {
 		m.mode = mode
+	}
+}
+
+func WithRouteRegistry(registry *pattern.RouteRegistry) AuthzOption {
+	return func(m *AuthzMiddleware) {
+		m.registry = registry
 	}
 }
 

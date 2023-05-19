@@ -19,6 +19,16 @@ type (
 
 var _ Configurer = (*AuthzConfigurer)(nil)
 
+func (c *AuthzConfigurer) Use(registry *ant.RouteRegistry) *AuthzConfigurer {
+	if len(c.registry.Mappings) > 0 ||
+		len(c.registry.Includes) > 0 ||
+		len(c.registry.Excludes) > 0 {
+		panic("call AuthzConfigurer.Use() first")
+	}
+	c.registry = registry
+	return c
+}
+
 func (c *AuthzConfigurer) RouteMatches(method string, patterns ...string) *AuthzConfigurer {
 	c.registry.RouteMatches(method, patterns...)
 	return c
@@ -149,12 +159,13 @@ func (c *AuthzConfigurer) Order() int {
 
 func (c *AuthzConfigurer) Configure(builder *Builder) {
 	if builder.subject == nil {
-		panic("call Subject() first")
+		panic("call Builder.Subject() first")
 	}
 	builder.chain = append(builder.chain,
 		middlewares.NewAuthzMiddleware(
-			builder.subject, c.registry,
+			builder.subject,
 			middlewares.WithAuthzMode(c.mode),
+			middlewares.WithRouteRegistry(c.registry),
 			middlewares.WithForbiddenHandler(c.handler),
 		).Handle)
 }

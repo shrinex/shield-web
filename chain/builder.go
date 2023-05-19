@@ -31,11 +31,10 @@ func (b *Builder) Subject() *SubjectConfigurer {
 }
 
 func (b *Builder) BearerAuth() *AuthcConfigurer {
-	return b.apply(&AuthcConfigurer{builder: b}).(*AuthcConfigurer)
-}
-
-func (b *Builder) SessionManagement() *SessionManagementConfigurer {
-	return b.apply(&SessionManagementConfigurer{builder: b}).(*SessionManagementConfigurer)
+	return b.apply(&AuthcConfigurer{
+		builder: b,
+		matcher: ant.NewMatcher(),
+	}).(*AuthcConfigurer)
 }
 
 func (b *Builder) AuthorizeRequests() *AuthzConfigurer {
@@ -43,6 +42,10 @@ func (b *Builder) AuthorizeRequests() *AuthzConfigurer {
 		builder:  b,
 		registry: ant.NewRouteRegistry(),
 	}).(*AuthzConfigurer)
+}
+
+func (b *Builder) SessionManagement() *SessionManagementConfigurer {
+	return b.apply(&SessionManagementConfigurer{builder: b}).(*SessionManagementConfigurer)
 }
 
 func (b *Builder) Build() Middleware {
