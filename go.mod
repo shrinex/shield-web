@@ -5,12 +5,12 @@ go 1.18
 // go mod edit -replace='github.com/shrinex/shield@v0.0.0-unpublished'='../shield'
 // go get github.com/shrinex/shield@v0.0.0-unpublished
 
-replace github.com/shrinex/shield v0.0.0-unpublished => ../shield
+//replace github.com/shrinex/shield v0.0.0-unpublished => ../shield
 
-require (
-	github.com/shrinex/shield v0.0.0-unpublished
-	github.com/stretchr/testify v1.8.2
-)
+//github.com/shrinex/shield v0.0.0-unpublished
+require github.com/stretchr/testify v1.8.2
+
+require github.com/shrinex/shield v0.0.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
